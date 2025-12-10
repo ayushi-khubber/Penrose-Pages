@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create and Manage Posts</title>
+
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter&family=Playfair+Display&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Playfair Display', sans-serif;
+      background-color: #342B24;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    header {
+      background-color: #B89D86;
+      color: #EAE6DD;
+      padding: 20px;
+      text-align: right;
+      font-family: 'Playfair Display', serif;
+    }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      color: #EAE6DD;
+      font-size: 2.5em;
+      margin-bottom: 20px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .post-form, .post-list, #analysis, #rec-section {
+      width: 60%;
+      margin: 30px auto;
+      padding: 20px;
+      background-color: #B89D86;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      text-align: left;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 1.2em;
+      color: #574144;
+      font-family: 'Playfair Display', serif;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 20px;
+      border: 1px solid #574144;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
+
+    button {
+      background-color: #342B24;
+      color: #EAE6DD;
+      padding: 10px 20px;
+      font-size: 1.2em;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: 'Playfair Display', serif;
+    }
+
+    .post {
+      border-bottom: 1px solid #574144;
+      padding: 10px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .post-text {
+      flex-grow: 1;
+      margin-right: 10px;
+      font-size: 1.1em;
+      color: #333;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .edit-post-btn, .delete-post-btn {
+      padding: 8px;
+      margin-right: 5px;
+      cursor: pointer;
+      background-color: #574144;
+      color: #EAE6DD;
+      border: none;
+      border-radius: 4px;
+      font-family: 'Playfair Display', serif;
+    }
+
+    .pagination {
+      margin-top: 20px;
+    }
+
+    .pagination button {
+      background-color: #B79EA1;
+      color: #574144;
+      border: none;
+      padding: 10px;
+      margin: 0 5px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background-color 0.3s;
+      font-family: 'Playfair Display', serif;
+    }
+
+    .pagination button:hover {
+      background-color: #B79EA1;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <button id="logoutBtn" onclick="logout()">Logout</button>
+  </header>
+
+  <h1>Create and Manage Posts</h1>
+
+  <div class="post-form">
+    <label for="text">Create a new post:</label>
+    <textarea id="text" name="text" rows="4" required></textarea>
+    <button onclick="createPost()">Create Post</button>
+  </div>
+
+  <div id="analysis"></div>
+  <div id="rec-section"></div>
+
+  <div class="post-list" id="postList"></div>
+  <div class="pagination" id="pagination"></div>
+
+  <script>
+    const postsPerPage = 3;
+    let currentPage = 1;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      getPosts();
+      fetchAnalysis();
+    });
+
+    async function createPost() {
+      const text = document.getElementById('text').value;
+      if (!text) return alert('Post text cannot be empty');
+      try {
+        const response = await fetch('/post', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+        const data = await response.json();
+        if (response.ok) {
+          document.getElementById('text').value = '';
+          currentPage = 1;
+          getPosts();
+          fetchAnalysis();
+        } else {
+          alert(data.message);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error creating post');
+      }
+    }
+
+    async function getPosts() {
+      try {
+        const response = await fetch('/posts', { method: 'GET' });
+        const data = await response.json();
+        if (response.ok) {
+          renderPosts(data.posts);
+        } else {
+          console.error(data.message);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    }
+
+    function renderPosts(posts) {
+      const postList = document.getElementById('postList');
+      const pagination = document.getElementById('pagination');
+      postList.innerHTML = '';
+      if (posts.length === 0) {
+        postList.innerHTML = '<p>No posts available.</p>';
+        pagination.innerHTML = '';
+        return;
+      }
+
+      const startIndex = (currentPage - 1) * postsPerPage;
+      const endIndex = startIndex + postsPerPage;
+      const paginatedPosts = posts.slice(startIndex, endIndex);
+
+      paginatedPosts.forEach(post => {
+        const postDiv = document.createElement('div');
+        postDiv.className = 'post';
+
+        const postText = document.createElement('div');
+        postText.className = 'post-text';
+        postText.textContent = post.text;
+
+        const editButton = document.createElement('button');
+        editButton.textContent = 'Edit';
+        editButton.className = 'edit-post-btn';
+        editButton.onclick = () => editPost(post);
+
+        const deleteButton = document.createElement('button');
+        deleteButton.textContent = 'Delete';
+        deleteButton.className = 'delete-post-btn';
+        deleteButton.onclick = () => deletePost(post._id);
+
+        postDiv.appendChild(postText);
+        postDiv.appendChild(editButton);
+        postDiv.appendChild(deleteButton);
+        postList.appendChild(postDiv);
+      });
+
+      const totalPages = Math.ceil(posts.length / postsPerPage);
+      pagination.innerHTML = '';
+      for (let i = 1; i <= totalPages; i++) {
+        const pageButton = document.createElement('button');
+        pageButton.textContent = i;
+        pageButton.onclick = () => {
+          currentPage = i;
+          renderPosts(posts);
+        };
+        if (i === currentPage) {
+          pageButton.style.fontWeight = 'bold';
+        }
+        pagination.appendChild(pageButton);
+      }
+    }
+
+    function editPost(post) {
+      const newText = prompt('Edit your post:', post.text);
+      if (newText !== null && newText !== post.text) {
+        updatePost(post._id, newText);
+      }
+    }
+
+    async function updatePost(postId, text) {
+      try {
+        const response = await fetch(`/posts/${postId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+        const data = await response.json();
+        if (response.ok) {
+          getPosts();
+          fetchAnalysis();
+        } else {
+          alert(data.message);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error updating post');
+      }
+    }
+
+    async function deletePost(postId) {
+      try {
+        const response = await fetch(`/posts/${postId}`, { method: 'DELETE' });
+        const data = await response.json();
+        if (response.ok) {
+          getPosts();
+          fetchAnalysis();
+        } else {
+          alert(data.message);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error deleting post');
+      }
+    }
+
+    function logout() {
+      window.location.href = '/logout';
+    }
+
+    async function fetchAnalysis() {
+      const res = await fetch('/analyze');
+      const data = await res.json();
+
+      document.getElementById('analysis').innerText =
+        `You've written ${data.totalEntries} entries.\n` +
+        `Avg Sentiment: ${data.averageSentiment}\n` +
+        `Top Emotions: ${Object.entries(data.frequentWords)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 3)
+          .map(([word, count]) => `${word} (${count})`)
+          .join(', ')}`;
+
+      const { books, meditations, quotes } = data.recommendations;
+
+      document.getElementById('rec-section').innerHTML = `
+        <h3>Recommendations for You</h3>
+        <strong>Books:</strong> <ul>${books.map(b => `<li>${b}</li>`).join('')}</ul>
+        <strong>Meditations:</strong> <ul>${meditations.map(m => `<li><a href="${m}" target="_blank">Link</a></li>`).join('')}</ul>
+        <strong>Quotes:</strong> <ul>${quotes.map(q => `<li>"${q}"</li>`).join('')}</ul>
+      `;
+    }
+
+  </script>
+</body>
+</html>

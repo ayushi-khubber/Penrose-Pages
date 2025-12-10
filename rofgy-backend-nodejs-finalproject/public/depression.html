@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Depression Test</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Playfair Display', serif;
+      background-color: #342B24;
+      color: #EAE6DD;
+      padding: 2rem;
+    }
+    h1 {
+      color: #FFD7BA;
+    }
+    .question {
+      margin-bottom: 1.5rem;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+    select {
+      padding: 0.5rem;
+      border-radius: 6px;
+      border: none;
+      background-color: #EAE6DD;
+      color: #342B24;
+    }
+    button {
+      margin-top: 1rem;
+      padding: 0.7rem 1.5rem;
+      background-color: #B89D86;
+      color: #342B24;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .result {
+      margin-top: 2rem;
+      font-size: 1.2rem;
+    }
+    canvas {
+      max-width: 100%;
+      background: #EAE6DD;
+      border-radius: 10px;
+      margin-top: 2rem;
+      padding: 1rem;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Depression Test (PHQ-9)</h1>
+  <form id="phqForm">
+    <div id="questions"></div>
+    <button type="submit">Submit</button>
+  </form>
+
+  <div class="result" id="result"></div>
+  <canvas id="progressChart" width="400" height="200"></canvas>
+
+  <script>
+    const questions = [
+      "Little interest or pleasure in doing things?",
+      "Feeling down, depressed, or hopeless?",
+      "Trouble falling or staying asleep, or sleeping too much?",
+      "Feeling tired or having little energy?",
+      "Poor appetite or overeating?",
+      "Feeling bad about yourself — or that you are a failure?",
+      "Trouble concentrating on things?",
+      "Moving or speaking slowly, or the opposite: fidgety or restless?",
+      "Thoughts that you would be better off dead or hurting yourself?"
+    ];
+
+    const options = [
+      { label: "Not at all", value: 0 },
+      { label: "Several days", value: 1 },
+      { label: "More than half the days", value: 2 },
+      { label: "Nearly every day", value: 3 }
+    ];
+
+    const container = document.getElementById("questions");
+
+    questions.forEach((q, i) => {
+      const div = document.createElement("div");
+      div.className = "question";
+      div.innerHTML = `<label for="q${i}">${q}</label>
+        <select id="q${i}" required>
+          ${options.map(opt => `<option value="${opt.value}">${opt.label}</option>`).join("")}
+        </select>`;
+      container.appendChild(div);
+    });
+
+    document.getElementById("phqForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      let total = 0;
+      for (let i = 0; i < questions.length; i++) {
+        total += parseInt(document.getElementById(`q${i}`).value);
+      }
+
+      let severity = getSeverity(total);
+      let advice = getAdvice(severity);
+
+      document.getElementById("result").innerHTML = `
+        <h2>Result: ${severity} Depression</h2>
+        <p>${advice}</p>
+      `;
+
+      const previousData = JSON.parse(localStorage.getItem('depressionProgress') || '[]');
+      const today = new Date().toLocaleDateString();
+      previousData.push({ date: today, score: total });
+      localStorage.setItem('depressionProgress', JSON.stringify(previousData));
+
+      renderChart(previousData);
+    });
+
+    function getSeverity(score) {
+      if (score <= 4) return "Minimal";
+      if (score <= 9) return "Mild";
+      if (score <= 14) return "Moderate";
+      if (score <= 19) return "Moderately Severe";
+      return "Severe";
+    }
+
+    function getAdvice(severity) {
+      switch (severity) {
+        case "Minimal": return "You're doing okay. Keep journaling and take care of yourself 💛";
+        case "Mild": return "Check in with yourself regularly. Mindfulness and journaling can help 🌱";
+        case "Moderate": return "You may benefit from talking to a mental health professional or counselor 🧠";
+        case "Moderately Severe": return "Strongly consider seeking help. You're not alone, and support is available 💬";
+        case "Severe": return "Please reach out to a professional or helpline. Your well-being matters ❤️";
+      }
+    }
+
+    function renderChart(data) {
+      const ctx = document.getElementById('progressChart').getContext('2d');
+
+      if (window.depressionChart) {
+        window.depressionChart.destroy();
+      }
+
+      const labels = data.map(entry => entry.date);
+      const scores = data.map(entry => entry.score);
+
+      const firstScore = scores[0];
+      const lastScore = scores[scores.length - 1];
+      const trend = lastScore < firstScore ? "⬇️ Improved" : lastScore > firstScore ? "⬆️ Worsened" : "➡️ Stable";
+
+      window.depressionChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'PHQ-9 Score Over Time',
+            data: scores,
+            borderColor: '#FFD7BA',
+            backgroundColor: 'rgba(255, 215, 186, 0.3)',
+            tension: 0.4,
+            fill: true,
+            pointRadius: 5,
+            pointBackgroundColor: '#FFD7BA'
+          }]
+        },
+        options: {
+          plugins: {
+            title: {
+              display: true,
+              text: `Your Progress ${trend}`,
+              font: {
+                size: 18
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const score = context.raw;
+                  const severity = getSeverity(score);
+                  return `Score: ${score} (${severity})`;
+                }
+              }
+            },
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              min: 0,
+              max: 27,
+              title: {
+                display: true,
+                text: 'PHQ-9 Score'
+              },
+              ticks: {
+                stepSize: 3
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Load chart on page refresh
+    window.onload = function () {
+      const stored = JSON.parse(localStorage.getItem('depressionProgress') || '[]');
+      if (stored.length > 0) {
+        renderChart(stored);
+      }
+    };
+  </script>
+</body>
+</html>

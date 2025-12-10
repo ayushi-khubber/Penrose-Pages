@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Anxiety Test (GAD-7)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Playfair Display', serif;
+      background-color: #342B24;
+      color: #EAE6DD;
+      padding: 2rem;
+    }
+    h1 {
+      color: #FFD7BA;
+    }
+    p {
+      margin: 1rem 0;
+    }
+    .question {
+      margin-bottom: 1.5rem;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+    select {
+      padding: 0.5rem;
+      border-radius: 6px;
+      border: none;
+      background-color: #EAE6DD;
+      color: #342B24;
+    }
+    button {
+      margin-top: 1rem;
+      padding: 0.7rem 1.5rem;
+      background-color: #B89D86;
+      color: #342B24;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .result {
+      margin-top: 2rem;
+      font-size: 1.2rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Anxiety Test (GAD-7)</h1>
+  <form id="gadForm">
+    <p>Rate how often you've been bothered by the following problems over the past 2 weeks:</p>
+    <p>
+      0 = Not at all<br>
+      1 = Several days<br>
+      2 = More than half the days<br>
+      3 = Nearly every day
+    </p>
+    <div id="questions"></div>
+    <button type="submit">Submit</button>
+    <div class="result" id="result"></div>
+  </form>
+
+  <canvas id="anxiety-chart" width="400" height="200" style="margin-top: 3rem;"></canvas>
+
+  <script>
+    const questions = [
+      "Feeling nervous, anxious, or on edge",
+      "Not being able to stop or control worrying",
+      "Worrying too much about different things",
+      "Trouble relaxing",
+      "Being so restless that it is hard to sit still",
+      "Becoming easily annoyed or irritable",
+      "Feeling afraid as if something awful might happen"
+    ];
+
+    const form = document.getElementById("gadForm");
+    const qContainer = document.getElementById("questions");
+
+    questions.forEach((q, i) => {
+      const div = document.createElement("div");
+      div.className = "question";
+      div.innerHTML = `
+        <label for="q${i}">${q}</label>
+        <select name="q${i}" id="q${i}" required>
+          <option value="">Select</option>
+          <option value="0">0 - Not at all</option>
+          <option value="1">1 - Several days</option>
+          <option value="2">2 - More than half the days</option>
+          <option value="3">3 - Nearly every day</option>
+        </select>
+      `;
+      qContainer.appendChild(div);
+    });
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      let total = 0;
+
+      for (let i = 0; i < questions.length; i++) {
+        total += parseInt(document.getElementById(`q${i}`).value);
+      }
+
+      let severity = "";
+      let advice = "";
+
+      if (total <= 4) {
+        severity = "None";
+        advice = "You're doing well! Stay mindful and kind to yourself 🌿";
+      } else if (total <= 9) {
+        severity = "Mild";
+        advice = "Practice grounding techniques and journaling—you're handling a lot 💌";
+      } else if (total <= 14) {
+        severity = "Moderate";
+        advice = "You might benefit from support—consider reaching out to someone you trust 🤝";
+      } else {
+        severity = "Severe";
+        advice = "Hey, it's okay to need help! Please consider reaching out to a mental health professional!";
+      }
+
+      document.getElementById("result").innerHTML = `
+        <h2>Result: ${severity} Anxiety</h2>
+        <p>Total Score: ${total}</p>
+        <p>${advice}</p>
+      `;
+
+      const today = new Date().toLocaleDateString();
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const username = urlParams.get('username') || 'anonymous';
+      const storageKey = `anxietyData_${username}`;
+      const previousData = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      previousData.push({ date: today, score: total });
+      localStorage.setItem(storageKey, JSON.stringify(previousData));
+
+      renderChart(previousData);
+    });
+
+    function renderChart(data) {
+      const ctx = document.getElementById('anxiety-chart').getContext('2d');
+      if (window.anxietyChart) window.anxietyChart.destroy();
+
+      window.anxietyChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: data.map(entry => entry.date),
+          datasets: [{
+            label: 'Anxiety Score Over Time',
+            data: data.map(entry => entry.score),
+            fill: true,
+            backgroundColor: 'rgba(255, 183, 183, 0.2)',
+            borderColor: '#FFB7B7',
+            tension: 0.4
+          }]
+        },
+        options: {
+          scales: {
+            y: {
+              min: 0,
+              max: 21,
+              ticks: { stepSize: 3 },
+              title: { display: true, text: 'GAD-7 Score (0–21)' }
+            }
+          },
+          plugins: {
+            legend: { labels: { color: '#EAE6DD' } }
+          }
+        }
+      });
+    }
+
+    window.onload = () => {
+      const saved = JSON.parse(localStorage.getItem('anxietyData') || '[]');
+      if (saved.length > 0) renderChart(saved);
+    };
+  </script>
+</body>
+</html>

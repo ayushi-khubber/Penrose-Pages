@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Burnout Test</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Playfair Display', serif;
+      background-color: #342B24;
+      color: #EAE6DD;
+      padding: 2rem;
+    }
+    h1 {
+      color: #FFD7BA;
+    }
+    p {
+      margin: 1rem 0;
+    }
+    .question {
+      margin-bottom: 1.5rem;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+    select {
+      padding: 0.5rem;
+      border-radius: 6px;
+      border: none;
+      background-color: #EAE6DD;
+      color: #342B24;
+    }
+    button {
+      margin-top: 1rem;
+      padding: 0.7rem 1.5rem;
+      background-color: #B89D86;
+      color: #342B24;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .result {
+      margin-top: 2rem;
+      font-size: 1.2rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Burnout Test</h1>
+  <form id="cbi-form">
+    <p>Rate how often you experience the following:</p>
+    <p>
+      0 = Never<br>
+      1 = Rarely<br>
+      2 = Sometimes<br>
+      3 = Often<br>
+      4 = Always
+    </p>
+    <div id="questions"></div>
+    <button type="submit">Submit</button>
+    <div class="result" id="result"></div>
+  </form>
+
+  <canvas id="burnout-chart" width="400" height="200" style="margin-top: 3rem;"></canvas>
+
+  <script>
+    const burnoutQuestions = [
+      "How often do you feel tired?",
+      "How often are you physically exhausted?",
+      "How often are you emotionally exhausted?",
+      "How often do you think: ‘I can’t take it anymore’?",
+      "How often do you feel worn out?",
+      "How often do you feel weak and susceptible to illness?",
+      "How often do you feel worn out at the end of the working day?",
+      "How often are you exhausted in the morning at the thought of another day at work?",
+      "How often do you feel that every working hour is tiring for you?",
+      "How often do you feel that your work is emotionally exhausting?"
+    ];
+
+    const form = document.getElementById("cbi-form");
+    const qContainer = document.getElementById("questions");
+
+    burnoutQuestions.forEach((q, i) => {
+      const div = document.createElement("div");
+      div.className = "question";
+      div.innerHTML = `
+        <label for="q${i}">${q}</label>
+        <select name="q${i}" id="q${i}" required>
+          <option value="">Select</option>
+          <option value="0">0 - Never</option>
+          <option value="1">1 - Rarely</option>
+          <option value="2">2 - Sometimes</option>
+          <option value="3">3 - Often</option>
+          <option value="4">4 - Always</option>
+        </select>
+      `;
+      qContainer.appendChild(div);
+    });
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      let total = 0;
+
+      for (let i = 0; i < burnoutQuestions.length; i++) {
+        total += parseInt(document.getElementById(`q${i}`).value);
+      }
+
+      const average = total / burnoutQuestions.length;
+      let level = '';
+      let advice = '';
+
+      if (average < 1.5) {
+        level = 'Low';
+        advice = "You're managing your stress well. Keep maintaining boundaries and resting 💆‍♀️";
+      } else if (average < 3) {
+        level = 'Moderate';
+        advice = "You might be showing signs of burnout. Consider small lifestyle adjustments 🧘‍♂️";
+      } else {
+        level = 'High';
+        advice = "You may be burned out. Please prioritize rest and talk to someone you trust or a professional ❤️‍🩹";
+      }
+
+      document.getElementById('result').innerHTML = `
+        <h2>Burnout Level: ${level}</h2>
+        <p>Average Score: ${average.toFixed(2)}</p>
+        <p>${advice}</p>
+      `;
+
+      const today = new Date().toLocaleDateString();
+      const previousData = JSON.parse(localStorage.getItem('burnoutData') || '[]');
+      previousData.push({ date: today, score: average });
+      localStorage.setItem('burnoutData', JSON.stringify(previousData));
+
+      renderChart(previousData);
+    });
+
+    function renderChart(data) {
+      const ctx = document.getElementById('burnout-chart').getContext('2d');
+      if (window.burnoutChart) window.burnoutChart.destroy();
+
+      window.burnoutChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: data.map(entry => entry.date),
+          datasets: [{
+            label: 'Burnout Score Over Time',
+            data: data.map(entry => entry.score),
+            fill: true,
+            backgroundColor: 'rgba(255, 215, 186, 0.2)',
+            borderColor: '#FFD7BA',
+            tension: 0.4
+          }]
+        },
+        options: {
+          scales: {
+            y: {
+              min: 0,
+              max: 4,
+              ticks: { stepSize: 1 },
+              title: { display: true, text: 'Average Score (0–4)' }
+            }
+          },
+          plugins: {
+            legend: { labels: { color: '#EAE6DD' } }
+          }
+        }
+      });
+    }
+
+    window.onload = () => {
+      const saved = JSON.parse(localStorage.getItem('burnoutData') || '[]');
+      if (saved.length > 0) renderChart(saved);
+    };
+  </script>
+</body>
+</html>

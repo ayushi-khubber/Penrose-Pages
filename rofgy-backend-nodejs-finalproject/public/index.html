@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Penrose Pages</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Playfair Display', serif;
+      background-color: #342B24;
+      color: #EAE6DD;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      text-align: center;
+      padding: 2rem 1rem;
+    }
+
+    header {
+      width: 100%;
+      background-color: #B89D86;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: flex-end;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .button-link {
+      background-color: #4B3B30;
+      color: #EAE6DD;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 18px;
+      margin-left: 12px;
+      font-size: 1rem;
+      font-family: 'Playfair Display', serif;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .button-link:hover {
+      background-color: #4B3B30;
+      transform: translateY(-2px);
+    }
+
+    h1 {
+      font-size: 3.5rem;
+      margin: 3rem 0 1rem;
+      color: #EAE6DD;
+      font-weight: 700;
+    }
+
+    #welcomeMessage {
+      font-size: 1.4rem;
+      color: #eae6ddcc;
+      margin-bottom: 2.5rem;
+      max-width: 700px;
+      line-height: 1.8;
+      font-weight: 400;
+    }
+
+    #testLinks {
+      margin-top: 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
+    }
+
+    #createPostBtn {
+      margin-top: 20px;
+      font-size: 1rem;
+    }
+  </style>
+</head>
+<body>
+ 
+  <header>
+    <button id="registerBtn" class="button-link">Register</button>
+    <button id="loginBtn" class="button-link">Login</button>
+    <button id="logoutBtn" class="button-link">Logout</button>
+  </header>
+
+  <h1>Penrose Pages</h1>
+  
+
+  <p id="welcomeMessage">Loading...</p>
+  
+
+  <div id="testLinks">
+    <a href="/anxiety.html" class="button-link">Anxiety Test</a>
+    <a href="/depression.html" class="button-link">Depression Test</a>
+    <a href="/burnout.html" class="button-link">Burnout Test</a>
+  </div>
+
+
+  <button id="createPostBtn" class="button-link">Create Journal Entry</button>
+
+
+  <script>
+    console.log('Page loaded, checking elements...');
+    
+
+    const elements = ['registerBtn', 'loginBtn', 'logoutBtn', 'createPostBtn', 'welcomeMessage'];
+    elements.forEach(id => {
+      const el = document.getElementById(id);
+      console.log(`${id}:`, el ? 'FOUND' : 'NOT FOUND');
+    });
+    
+    async function handleAuthentication() {
+      console.log('Starting authentication...');
+      
+      try {
+        const response = await fetch('/api/current-user');
+        console.log('API Response status:', response.status);
+        
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('User data:', data);
+        
+        const registerBtn = document.getElementById('registerBtn');
+        const loginBtn = document.getElementById('loginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const createPostBtn = document.getElementById('createPostBtn');
+        const welcomeMessage = document.getElementById('welcomeMessage');
+        
+
+        if (!registerBtn || !loginBtn || !logoutBtn || !createPostBtn || !welcomeMessage) {
+          throw new Error('One or more HTML elements not found! Check IDs.');
+        }
+        
+        if (data.username) {
+          console.log('User logged in as:', data.username);
+          registerBtn.style.display = 'none';
+          loginBtn.style.display = 'none';
+          logoutBtn.style.display = 'inline-block';
+          createPostBtn.style.display = 'inline-block';
+          welcomeMessage.innerHTML = `Welcome, <strong>${data.username}</strong>!<br/>Lose yourself in your words and thoughts!<br/>`;
+        } else {
+          console.log('No user logged in');
+          registerBtn.style.display = 'inline-block';
+          loginBtn.style.display = 'inline-block';
+          logoutBtn.style.display = 'none';
+          createPostBtn.style.display = 'none';
+          welcomeMessage.innerHTML = "A space for your thoughts on romanticism, nonsense, poeticism,<br/>or whatever else you feel like today!";
+        }
+        
+      } catch (error) {
+        console.error('Authentication error:', error);
+        
+
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = 'color: white; background: darkred; padding: 20px; margin: 20px; border-radius: 8px;';
+        errorDiv.innerHTML = `
+          <h3>Authentication Error</h3>
+          <p>${error.message}</p>
+          <p>Please check:</p>
+          <ol>
+            <li>Server is running (node app.js)</li>
+            <li>Visit <a href="/api/current-user" style="color: lightblue;">/api/current-user</a> directly</li>
+            <li>Check browser console for details</li>
+          </ol>
+        `;
+        document.body.appendChild(errorDiv);
+      }
+    }
+    
+    function logout() {
+      fetch('/logout')
+        .then(() => window.location.href = '/login')
+        .catch(err => console.error('Logout error:', err));
+    }
+    
+    function redirectToPostCreation() {
+      window.location.href = '/post';
+    }
+    
+
+    document.getElementById('logoutBtn')?.addEventListener('click', logout);
+    document.getElementById('createPostBtn')?.addEventListener('click', redirectToPostCreation);
+    document.getElementById('registerBtn')?.addEventListener('click', () => window.location.href = '/register');
+    document.getElementById('loginBtn')?.addEventListener('click', () => window.location.href = '/login');
+    
+
+    window.onload = handleAuthentication;
+  </script>
+</body>
+</html>
