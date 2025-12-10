@@ -7,7 +7,7 @@ Penrose Pages is a journaling platform that integrates technology and psychiatry
 - **Journal Management:** Create, edit, delete, and paginate journal entries.  
 - **Emotional Tracking via Sentiment Analysis:** Detect and track emotional patterns in users' journal entries.  
 - **Personalized Recommendations:** Suggest books, meditations, and quotes based on the frequency of emotions in entries.  
-- **Mental Health Self-Assessments:** Includes psychiatry-backed tests:  
+- **Mental Health Self-Assessments:** Includes psychiatry-backed tests like,
   - **GAD-7** for Anxiety
   - **PHQ-9** for Depression
   - **CBI** for Burnout
