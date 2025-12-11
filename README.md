@@ -17,6 +17,7 @@ Penrose Pages is a journaling platform that integrates tech and psychiatry. It's
 - **Backend:** Node.js | Express | MongoDB | REST APIs | sessions  
 - **Frontend:** HTML | CSS | JavaScript  
 - **JavaScript Libraries:** Sentiment.js for NLP | Chart.js for Visualization
+- **Environment:** Docker Compose for Containerization
 
 ---
 
