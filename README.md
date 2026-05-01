@@ -1,4 +1,4 @@
-Penrose Pages is a journaling platform that integrates tech and psychiatry. It's designed to help users track emotional patterns, introspect deeply, and gain insights into their mental health through personalized recommendations and clinical self-assessment tests.
+Penrose Pages is a journaling platform that integrates tech and psychology. It's designed to help users track emotional patterns, introspect deeply, and gain insights into their mental health through personalized recommendations and clinical self-assessment tests.
 
 ---
 
